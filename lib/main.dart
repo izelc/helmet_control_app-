@@ -1,121 +1,147 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const HelmetApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class HelmetApp extends StatelessWidget {
+  const HelmetApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Helmet Control',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const HelmetControlPage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+enum ConnectionStatus { disconnected, pairing, connected }
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class HelmetControlPage extends StatefulWidget {
+  const HelmetControlPage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HelmetControlPage> createState() => _HelmetControlPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _HelmetControlPageState extends State<HelmetControlPage> {
+  ConnectionStatus _connectionStatus = ConnectionStatus.disconnected;
+  String _lastCommand = 'None';
 
-  void _incrementCounter() {
+  void _setCommand(String command) {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _lastCommand = command;
     });
+  }
+
+  void _onPair() {
+    setState(() {
+      _connectionStatus = ConnectionStatus.pairing;
+      _lastCommand = 'pair';
+    });
+
+    // Şimdilik "başarılı bağlandı" simülasyonu (Task #1 için)
+    Future.delayed(const Duration(seconds: 1), () {
+      setState(() {
+        _connectionStatus = ConnectionStatus.connected;
+      });
+    });
+  }
+
+  void _onStart() {
+    if (_connectionStatus != ConnectionStatus.connected) return;
+    _setCommand('start');
+  }
+
+  void _onPause() {
+    if (_connectionStatus != ConnectionStatus.connected) return;
+    _setCommand('pause');
+  }
+
+  void _onStop() {
+    if (_connectionStatus != ConnectionStatus.connected) return;
+    _setCommand('stop');
+  }
+
+  String get _connectionText {
+    switch (_connectionStatus) {
+      case ConnectionStatus.disconnected:
+        return 'Disconnected';
+      case ConnectionStatus.pairing:
+        return 'Pairing...';
+      case ConnectionStatus.connected:
+        return 'Connected';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    final isConnected = _connectionStatus == ConnectionStatus.connected;
+
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      appBar: AppBar(title: const Text('Helmet Control')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('You have pushed the button this many times:'),
+            // Status texts
             Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+              'Connection status: $_connectionText',
+              style: const TextStyle(fontSize: 18),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Last command: $_lastCommand',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+
+            // Pair button
+            ElevatedButton(
+              onPressed: _connectionStatus == ConnectionStatus.connected
+                  ? null
+                  : _onPair,
+              child: const Text('Pair'),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Command buttons
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                ElevatedButton(
+                  onPressed: isConnected ? _onStart : null,
+                  child: const Text('Start'),
+                ),
+                ElevatedButton(
+                  onPressed: isConnected ? _onPause : null,
+                  child: const Text('Pause'),
+                ),
+                ElevatedButton(
+                  onPressed: isConnected ? _onStop : null,
+                  child: const Text('Stop'),
+                ),
+              ],
+            ),
+
+            const Spacer(),
+
+            // Küçük info alanı
+            const Text(
+              'Task #1 demo – UI + simple state\n(No real device communication yet)',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
